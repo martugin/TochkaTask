@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Exception;
@@ -24,7 +23,7 @@ namespace VkBot
         {
             _api.Authorize(new ApiAuthParams
             {
-                ApplicationId = 6750697,
+                ApplicationId = AppId,
                 Login = login,
                 Password = password,
                 Settings = Settings.All,

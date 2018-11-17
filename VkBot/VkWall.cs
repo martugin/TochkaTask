@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace VkBot
+﻿namespace VkBot
 {
     //Принадлежность стены ВК
     public enum VkWallType
