@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.27703.2042
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VkBot", "VkBot\VkBot.csproj", "{41CD7DF1-4408-414C-9E8E-46E7444CC00A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VkBotTest", "VkBotTest\VkBotTest.csproj", "{CF08F8F8-2EE6-449F-B698-12E640E2EE26}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{41CD7DF1-4408-414C-9E8E-46E7444CC00A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41CD7DF1-4408-414C-9E8E-46E7444CC00A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41CD7DF1-4408-414C-9E8E-46E7444CC00A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF08F8F8-2EE6-449F-B698-12E640E2EE26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF08F8F8-2EE6-449F-B698-12E640E2EE26}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF08F8F8-2EE6-449F-B698-12E640E2EE26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF08F8F8-2EE6-449F-B698-12E640E2EE26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
