@@ -20,7 +20,7 @@ namespace VkBot
         private static string _userLogin; //Логин пользователя
         private static bool _useTwoFactorAuthorization;//Использовать двухфакторную авторизацию
         private static bool _loadCopyHistory; //Загружать тексты всей истории репостов из постов, содержащих репосты
-        private static int _loadPostsCount; //Количество загружаемых постов
+        private static ulong _loadPostsCount; //Количество загружаемых постов
         private static string _resultPostDomain; //Строковое id стены для размещения результатов
 
         //Загрузка настроек из App.config, возращает false, если в файле ошибка
@@ -39,7 +39,7 @@ namespace VkBot
 
                 _loadCopyHistory = ConfigurationManager.AppSettings["LoadCopyHistory"]?.ToLower() == "true";
 
-                if (!int.TryParse(ConfigurationManager.AppSettings["LoadPostsCount"], out _loadPostsCount))
+                if (!ulong.TryParse(ConfigurationManager.AppSettings["LoadPostsCount"], out _loadPostsCount))
                 {
                     Console.WriteLine("Ошибка чтения файла конфигурации App.config. Не указано или некорректно значение параметра ResultPostDomain");
                     return false;
@@ -52,7 +52,7 @@ namespace VkBot
                     return false;
                 }
             }
-            catch (ConfigurationErrorsException ex)
+            catch (ConfigurationErrorsException)
             {
                 Console.WriteLine("Ошибка чтения файла конфигурации App.config. В файле нет секции <appSettings>");
                 return false;
@@ -64,15 +64,23 @@ namespace VkBot
         //Возвращает true, если авторизация прошла успешно
         static bool Authorize(VkInteraction vk) //Объект для взаимодействия с ВК
         {
-            if (!LoadAppSettings())
-                return false;
-
-            Console.WriteLine("Введите пароль пользователя:");
-            string password = EnterPassword();
-            Func<string> twoFactorFun = _useTwoFactorAuthorization ? EnterConfirmCode : (Func<string>) null;
-
-            vk.Authorize(_userLogin, password, twoFactorFun);
-            
+            while (true)
+            {
+                Console.WriteLine("Введите пароль пользователя:");
+                string password = EnterPassword();
+                if (string.IsNullOrEmpty(password))
+                    return false;
+                Func<string> twoFactorFun = _useTwoFactorAuthorization ? EnterConfirmCode : (Func<string>)null;
+                try
+                {
+                    vk.Authorize(_userLogin, password, twoFactorFun);
+                    break;
+                }
+                catch  (Exception ex) when (ex is VkApiAuthorizationException || ex is VkApiException)
+                {
+                    Console.WriteLine("Ошибка авторизации. Неправильный логин или пароль");
+                }
+            }
             return true;
         }
 
@@ -106,8 +114,11 @@ namespace VkBot
             return password;
         }
 
+        //Главная функция программы
         static void Main(string[] args)
         {
+            if (!LoadAppSettings())
+                return;
             using (var vk = new VkInteraction())
             {
                 if (!Authorize(vk))
@@ -123,11 +134,20 @@ namespace VkBot
                     string domain = Console.ReadLine();
                     if (string.IsNullOrEmpty(domain))
                         break;
-                    var posts = vk.LoadPostsText(domain, _loadPostsCount, _loadCopyHistory);
-                    var frequences = new TextMetricsCalculator(posts.ToArray()).CalcLettersFrequences();
-                    var json = JsonConvert.SerializeObject(frequences);
-                    Console.WriteLine(json);
-                    //vk.WritePost(_resultPostDomain, json);
+                    var wall = vk.GetWall(domain);
+                    if (wall == null)
+                        Console.WriteLine("Не найдена стена пользователя или группы " + domain);
+                    else
+                    {
+                        var posts = vk.LoadPostsText(wall, _loadPostsCount, _loadCopyHistory);
+                        var frequences = new TextMetricsCalculator(posts.ToArray()).CalcLettersFrequences();
+                        var json = JsonConvert.SerializeObject(frequences);
+                        Console.WriteLine(json);
+                        var resWall = vk.GetWall(_resultPostDomain);
+                        if (resWall == null)
+                            Console.WriteLine("Не найдена стена пользователя или группы " + domain + " для размещения записей");
+                        vk.WritePost(resWall, json);
+                    }
                 }
             }
         }

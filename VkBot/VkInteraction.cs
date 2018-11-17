@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using VkNet;
 using VkNet.Enums.Filters;
+using VkNet.Exception;
 using VkNet.Model;
 using VkNet.Model.RequestParams;
 
@@ -18,8 +19,8 @@ namespace VkBot
 
         //Авторизация приложения VK
         public void Authorize(string login, //Логин пользователя
-                                                        string password, //Пароль пользователя
-                                                        Func<string> getCode = null) //Функция, для получения кода второго этапа авторизации, если авторизация однофакторная, то null
+                                         string password, //Пароль пользователя
+                                         Func<string> getCode = null) //Функция, для получения кода второго этапа авторизации, если авторизация однофакторная, то null
         {
             _api.Authorize(new ApiAuthParams
             {
@@ -30,15 +31,51 @@ namespace VkBot
                 TwoFactorAuthorization = getCode
             });
         }
- 
+
+        //Получение стены пользователя или сообщества по короткому имени
+        //Если стена не найдена, возвращается null
+        public VkWall GetWall(string domain)
+        {
+            try
+            {
+                long id = _api.Users.Get(new[] { domain })[0].Id;
+                return new VkWall(domain, id, VkWallType.User);
+            }
+            catch (InvalidUserIdException) { }
+
+            try
+            {
+                long id = -_api.Groups.GetById(new[] { domain }, domain, GroupsFields.CanSeelAllPosts)[0].Id;
+                return new VkWall(domain, id, VkWallType.Group);
+            }
+            catch (InvalidGroupIdException) { }
+            return null;
+        }
+
+        //Получение стены пользователя по id
+        //Если стена не найдена, возвращается null
+        public VkWall GetWall(long id)// id на вход подается положительный
+        {
+            try
+            {
+                string domain = _api.Users.Get(new[] { id })[0].Domain;
+                return new VkWall(domain, id, VkWallType.User);
+            }
+            catch (InvalidUserIdException) { }
+
+            //Группу по id получить api не позволяет (вроде бы)
+
+            return null;
+        }
+
         //Загрузка текстов постов на стене пользователя или группы
-        public List<string> LoadPostsText(string domain, //Короткий адрес пользователя или сообщества
-                                                          int count, //Количество загружаемых постов
+        public List<string> LoadPostsText(VkWall wall, //Стена пользователя или группы
+                                                          ulong count, //Количество загружаемых постов
                                                           bool loadCopyHistory = true) //Для репостов, кроме текста поста, загружать тексты всей истории репоста
         {
+            var wallGet = _api.Wall.Get(new WallGetParams { OwnerId = wall.Id, Count = count });
             var res = new List<string>();
-            var wall = _api.Wall.Get(new WallGetParams { Domain = domain, Count = 5 });
-            foreach (var post in wall.WallPosts)
+            foreach (var post in wallGet.WallPosts)
             {
                 string st = post.Text;
                 if (loadCopyHistory)
@@ -48,19 +85,12 @@ namespace VkBot
             }
             return res;
         }
-
-        public void WritePost(long ownerId, //Id пользователя или сообщества (передается со знаком минус)
+        
+        //Запись поста на стене пользователя или группы
+        public void WritePost(VkWall wall, //Стена пользователя или группы
                                          string text) //Текст поста
         {
-            _api.Wall.Post(new WallPostParams {OwnerId = ownerId, Message = text});
-        }
-
-        //Запись текста на стену пользователя или сообщества
-        public void WritePost(string domain, //Короткий адрес пользователя или сообщества
-                                         string text) //Текст поста
-        {
-            WritePost(_api.Users.Get(new[] {domain})[0].Id, text);
-            //var group = api.Groups.GetById(new[] {"club173913243"}, "club173913243", GroupsFields.CanSeelAllPosts);
+            _api.Wall.Post(new WallPostParams { OwnerId = wall.Id, Message = text});
         }
 
         //При уничтожении объекта также будет уничножен объект VkApi
