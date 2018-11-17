@@ -51,22 +51,6 @@ namespace VkBot
             return null;
         }
 
-        //Получение стены пользователя по id
-        //Если стена не найдена, возвращается null
-        public VkWall GetWall(long id)// id на вход подается положительный
-        {
-            try
-            {
-                string domain = _api.Users.Get(new[] { id })[0].Domain;
-                return new VkWall(domain, id, VkWallType.User);
-            }
-            catch (InvalidUserIdException) { }
-
-            //Группу по id получить api не позволяет (вроде бы)
-
-            return null;
-        }
-
         //Загрузка текстов постов на стене пользователя или группы
         public List<string> LoadPostsText(VkWall wall, //Стена пользователя или группы
                                                           ulong count, //Количество загружаемых постов
